@@ -1,0 +1,8 @@
+{
+  "name": "20.2.2026--5AM",
+  "description": "",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

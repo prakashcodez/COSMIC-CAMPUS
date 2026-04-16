@@ -1,7 +1,7 @@
 //COSMIC CAMPUS APP CODE
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { INITIAL_TASKS, INITIAL_CLASSES, UPCOMING_EVENTS, PROFILE_IMG, getLevelTitle } from './constants';
+import { INITIAL_TASKS, INITIAL_CLASSES, UPCOMING_EVENTS, MALE_ICON, FEMALE_ICON, getLevelTitle } from './constants';
 import { Task, Category, ClassSession, UpcomingEvent, UserProfile, CampusChecklistItem, DailyRoutineItem, ResourceLink, BudgetState, BudgetPeriod, FocusState, ExamSchedule, ExamSubject, ProgressMilestone } from './types';
 import TasksScreen from './components/TasksScreen';
 import TimetableScreen from './components/TimetableScreen';
@@ -410,7 +410,7 @@ const App: React.FC = () => {
                 <div className="flex items-center justify-between px-2">
                 <div className="flex items-center gap-4">
                     <div className="size-20 rounded-full bg-primary/20 border-2 border-primary/20 flex items-center justify-center shadow-lg shadow-primary/10 overflow-hidden">
-                    <img src={PROFILE_IMG} alt="Profile" className="w-full h-full object-cover" />
+                    <img src={userProfile?.gender === 'female' ? FEMALE_ICON : MALE_ICON} alt="Profile" className="w-full h-full object-cover" />
                     </div>
                     <div className="min-w-0">
                     <h2 className="text-2xl font-black text-white truncate max-w-[180px]">{userProfile?.name}</h2>
@@ -1059,7 +1059,7 @@ const OnboardingScreen: React.FC<{ onComplete: (profile: UserProfile) => void, o
                         <div className="absolute -bottom-20 -left-20 size-60 bg-purple-500/20 rounded-full blur-[80px]"></div>
 
                         <div className="relative z-10 size-24 rounded-full border-4 border-white/10 shadow-xl overflow-hidden mb-4">
-                            <img src={PROFILE_IMG} alt="Profile" className="w-full h-full object-cover" />
+                            <img src={gender === 'female' ? FEMALE_ICON : MALE_ICON} alt="Profile" className="w-full h-full object-cover" />
                         </div>
 
                         <h2 className="relative z-10 text-2xl font-black text-white leading-tight uppercase tracking-tight">{name}</h2>

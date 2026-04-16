@@ -5,8 +5,9 @@ export const INITIAL_TASKS: Task[] = [];
 
 export const UPCOMING_EVENTS: UpcomingEvent[] = [];
 
-// Default Profile Picture
-export const PROFILE_IMG = "src/Picsart_25-12-24_21-06-04-303.png"; // Placeholder for the pizza slice image you uploaded. Please upload your image to the project files and update this URL.
+// Default Profile Pictures based on gender
+export const MALE_ICON = "https://cdn-icons-png.flaticon.com/512/4140/4140048.png";
+export const FEMALE_ICON = "https://cdn-icons-png.flaticon.com/512/4140/4140047.png";
 
 export const INITIAL_CLASSES: ClassSession[] = [];
 

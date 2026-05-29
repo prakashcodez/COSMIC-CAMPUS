@@ -5,10 +5,6 @@ export const INITIAL_TASKS: Task[] = [];
 
 export const UPCOMING_EVENTS: UpcomingEvent[] = [];
 
-// Default Profile Pictures based on gender
-export const MALE_ICON = "https://cdn-icons-png.flaticon.com/512/4140/4140048.png";
-export const FEMALE_ICON = "https://cdn-icons-png.flaticon.com/512/4140/4140047.png";
-
 export const INITIAL_CLASSES: ClassSession[] = [];
 
 export const MILESTONES: Milestone[] = [

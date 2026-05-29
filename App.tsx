@@ -1,7 +1,7 @@
 //COSMIC CAMPUS APP CODE
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { INITIAL_TASKS, INITIAL_CLASSES, UPCOMING_EVENTS, MALE_ICON, FEMALE_ICON, getLevelTitle } from './constants';
+import { INITIAL_TASKS, INITIAL_CLASSES, UPCOMING_EVENTS, getLevelTitle } from './constants';
 import { Task, Category, ClassSession, UpcomingEvent, UserProfile, CampusChecklistItem, DailyRoutineItem, ResourceLink, BudgetState, BudgetPeriod, FocusState, ExamSchedule, ExamSubject, ProgressMilestone } from './types';
 import TasksScreen from './components/TasksScreen';
 import TimetableScreen from './components/TimetableScreen';
@@ -80,6 +80,12 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('cosmic_campus_claimed_milestones');
     return saved ? JSON.parse(saved) : [];
   });
+  
+  const [lifeBalanceStats, setLifeBalanceStats] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('cosmic_campus_life_balance');
+    return saved ? JSON.parse(saved) : {};
+  });
+
   const [showFocusModal, setShowFocusModal] = useState(false);
 
   // Milestone Modal States (Moved from ProgressScreen to avoid stacking context issues)
@@ -91,6 +97,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('cosmic_campus_claimed_milestones', JSON.stringify(claimedMilestones));
   }, [claimedMilestones]);
+
+  useEffect(() => {
+    localStorage.setItem('cosmic_campus_life_balance', JSON.stringify(lifeBalanceStats));
+  }, [lifeBalanceStats]);
 
   const claimMilestone = (id: string) => {
     if (!claimedMilestones.includes(id)) {
@@ -244,6 +254,16 @@ const App: React.FC = () => {
       if (!task) return prev;
       const isCompleting = !task.completed;
       updateXP(isCompleting ? 10 : -10);
+      
+      setLifeBalanceStats(stats => {
+        const cat = task.category;
+        const currentCount = stats[cat] || 0;
+        return {
+          ...stats,
+          [cat]: Math.max(0, currentCount + (isCompleting ? 1 : -1))
+        };
+      });
+
       return prev.map(t => t.id === id ? { ...t, completed: isCompleting, completedAt: isCompleting ? new Date().toISOString() : undefined } : t);
     });
   };
@@ -369,7 +389,20 @@ const App: React.FC = () => {
   const deleteChecklistItem = (id: string) => setChecklist(prev => prev.filter(i => i.id !== id));
   const clearChecklist = () => setChecklist([]);
   
-  const toggleRoutineItem = (id: string) => setRoutine(prev => prev.map(i => i.id === id ? { ...i, completed: !i.completed, completedAt: !i.completed ? new Date().toISOString() : undefined } : i));
+  const toggleRoutineItem = (id: string) => {
+      setRoutine(prev => {
+          const item = prev.find(i => i.id === id);
+          if (!item) return prev;
+          const isCompleting = !item.completed;
+          
+          setLifeBalanceStats(stats => {
+            const currentCount = stats['Habits'] || 0;
+            return { ...stats, Habits: Math.max(0, currentCount + (isCompleting ? 1 : -1)) };
+          });
+
+          return prev.map(i => i.id === id ? { ...i, completed: isCompleting, completedAt: isCompleting ? new Date().toISOString() : undefined } : i);
+      });
+  };
   const updateRoutineItem = (id: string, updates: Partial<DailyRoutineItem>) => setRoutine(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
   const addCustomHabit = (title: string, frequency: 'daily' | 'weekly' | 'monthly') => {
       const colors = ['bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500'];
@@ -390,6 +423,19 @@ const App: React.FC = () => {
   const reorderResources = (newOrder: ResourceLink[]) => setResources(newOrder);
   const handleInspirationXP = () => updateXP(5);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              const base64String = reader.result as string;
+              setUserProfile(prev => prev ? { ...prev, profilePicture: base64String } : null);
+          };
+          reader.readAsDataURL(file);
+      }
+  };
+
   const handleNavClick = (screen: Screen) => {
     playSound('click');
     if (currentScreen === screen) {
@@ -409,8 +455,21 @@ const App: React.FC = () => {
           <div id="scroll-settings" className="h-full overflow-y-auto hide-scrollbar pb-32 p-6 space-y-8 animate-fade-in">
                 <div className="flex items-center justify-between px-2">
                 <div className="flex items-center gap-4">
-                    <div className="size-20 rounded-full bg-primary/20 border-2 border-primary/20 flex items-center justify-center shadow-lg shadow-primary/10 overflow-hidden">
-                    <img src={userProfile?.gender === 'female' ? FEMALE_ICON : MALE_ICON} alt="Profile" className="w-full h-full object-cover" />
+                    <div className="relative">
+                        <div className="size-20 rounded-full bg-primary/20 border-2 border-primary/20 flex items-center justify-center shadow-lg shadow-primary/10 overflow-hidden">
+                            {userProfile?.profilePicture ? (
+                                <img src={userProfile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-3xl font-black text-primary">{userProfile?.name?.charAt(0).toUpperCase() || 'S'}</span>
+                            )}
+                        </div>
+                        <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="absolute bottom-0 right-0 size-6 bg-primary rounded-full flex items-center justify-center text-white shadow-md active:scale-90 transition-transform"
+                        >
+                            <span className="material-symbols-outlined text-[12px]">edit</span>
+                        </button>
+                        <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
                     </div>
                     <div className="min-w-0">
                     <h2 className="text-2xl font-black text-white truncate max-w-[180px]">{userProfile?.name}</h2>
@@ -669,6 +728,8 @@ const App: React.FC = () => {
                   setShowClaimSuccess={setShowClaimSuccess}
                   showLevelTable={showLevelTable}
                   setShowLevelTable={setShowLevelTable}
+                  lifeBalanceStats={lifeBalanceStats}
+                  onResetLifeBalance={() => setLifeBalanceStats({})}
                 />
             </div>
         )}
@@ -1058,8 +1119,8 @@ const OnboardingScreen: React.FC<{ onComplete: (profile: UserProfile) => void, o
                         <div className="absolute -top-20 -right-20 size-60 bg-primary/20 rounded-full blur-[80px]"></div>
                         <div className="absolute -bottom-20 -left-20 size-60 bg-purple-500/20 rounded-full blur-[80px]"></div>
 
-                        <div className="relative z-10 size-24 rounded-full border-4 border-white/10 shadow-xl overflow-hidden mb-4">
-                            <img src={gender === 'female' ? FEMALE_ICON : MALE_ICON} alt="Profile" className="w-full h-full object-cover" />
+                        <div className="relative z-10 size-24 rounded-full border-4 border-white/10 shadow-xl overflow-hidden mb-4 flex items-center justify-center bg-primary/20">
+                            <span className="text-4xl font-black text-primary">{name?.charAt(0).toUpperCase() || 'S'}</span>
                         </div>
 
                         <h2 className="relative z-10 text-2xl font-black text-white leading-tight uppercase tracking-tight">{name}</h2>

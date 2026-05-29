@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from "motion/react";
 import { Task, Category, UpcomingEvent, UserProfile, CampusChecklistItem, DailyRoutineItem, ClassSession, ResourceLink, BudgetState, BudgetPeriod, FocusState } from '../types';
-import { MALE_ICON, FEMALE_ICON } from '../constants';
 import { QUOTES } from '../quotes';
 import { playSound } from '../utils/sound';
 
@@ -802,7 +801,11 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
       <div className="flex items-center justify-between pt-2 px-1">
         <div className="flex items-center gap-3">
           <div className="size-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-[0_10px_30px_-10px_rgba(13,127,242,0.4)] relative overflow-hidden group">
-            <img src={userProfile?.gender === 'female' ? FEMALE_ICON : MALE_ICON} alt="User" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            {userProfile?.profilePicture ? (
+                <img src={userProfile.profilePicture} alt="User" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+                <span className="text-2xl font-black text-primary">{userProfile?.name?.charAt(0).toUpperCase() || 'S'}</span>
+            )}
             <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors"></div>
           </div>
           <div className="min-w-0">

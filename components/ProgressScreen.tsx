@@ -76,6 +76,8 @@ interface ProgressScreenProps {
   setShowClaimSuccess: (m: ProgressMilestone | null) => void;
   showLevelTable: boolean;
   setShowLevelTable: (show: boolean) => void;
+  lifeBalanceStats?: Record<string, number>;
+  onResetLifeBalance?: () => void;
 }
 
 // Helper for Level Titles
@@ -85,10 +87,12 @@ const ProgressScreen: React.FC<ProgressScreenProps> = ({
     tasks, userProfile, classes = [], events = [], checklist = [], routine = [], 
     budget, focusState, examSchedules = [], claimedMilestones = [], onClaimMilestone,
     viewingMilestone, setViewingMilestone, claimingMilestone, setClaimingMilestone,
-    showClaimSuccess, setShowClaimSuccess, showLevelTable, setShowLevelTable
+    showClaimSuccess, setShowClaimSuccess, showLevelTable, setShowLevelTable,
+    lifeBalanceStats, onResetLifeBalance
 }) => {
   const [showAllLocked, setShowAllLocked] = useState(false);
   const [showAllLegendary, setShowAllLegendary] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
   useEffect(() => {
@@ -552,31 +556,32 @@ const ProgressScreen: React.FC<ProgressScreenProps> = ({
       </div>
 
       {(() => {
-        const getCategoryScore = (category: Category, defaultScore: number) => {
-          const categoryTasks = tasks.filter(t => t.category === category);
-          if (categoryTasks.length === 0) return defaultScore;
-          const completedTasks = categoryTasks.filter(t => t.completed);
-          return Math.min(100, (completedTasks.length / categoryTasks.length) * 100);
+        const getStatsScore = (catName: string) => {
+           if (!lifeBalanceStats) return 0;
+           return lifeBalanceStats[catName] || 0;
         };
 
-        const getHabitsScore = () => {
-          const habitTasks = tasks.filter(t => t.category === Category.HABITS);
-          const totalItems = routine.length + habitTasks.length;
-          if (totalItems === 0) return 60;
-          
-          const completedRoutines = routine.filter(r => r.completed).length;
-          const completedHabitTasks = habitTasks.filter(t => t.completed).length;
-          
-          return Math.min(100, ((completedRoutines + completedHabitTasks) / totalItems) * 100);
+        const maxCompleted = Math.max(
+          10,
+          getStatsScore('Study'),
+          getStatsScore('Work'),
+          getStatsScore('Health'),
+          getStatsScore('Personal'),
+          getStatsScore('Hobbies'),
+          getStatsScore('Habits')
+        );
+
+        const calculateRadarScore = (catName: string) => {
+          return Math.round((getStatsScore(catName) / maxCompleted) * 100);
         };
 
         const radarData = [
-          { subject: 'Study', A: getCategoryScore(Category.STUDY, 78), fullMark: 100, color: '#3b82f6', icon: 'menu_book' },
-          { subject: 'Work', A: getCategoryScore(Category.WORK, 65), fullMark: 100, color: '#f59e0b', icon: 'work' },
-          { subject: 'Health', A: getCategoryScore(Category.HEALTH, 82), fullMark: 100, color: '#10b981', icon: 'favorite' },
-          { subject: 'Personal', A: getCategoryScore(Category.PERSONAL, 60), fullMark: 100, color: '#06b6d4', icon: 'person' },
-          { subject: 'Hobbies', A: getCategoryScore(Category.HOBBIES, 70), fullMark: 100, color: '#d946ef', icon: 'palette' },
-          { subject: 'Habits', A: getHabitsScore(), fullMark: 100, color: '#f43f5e', icon: 'task_alt' },
+          { subject: 'Study', A: calculateRadarScore('Study'), fullMark: 100, color: '#3b82f6', icon: 'menu_book' },
+          { subject: 'Work', A: calculateRadarScore('Work'), fullMark: 100, color: '#f59e0b', icon: 'work' },
+          { subject: 'Health', A: calculateRadarScore('Health'), fullMark: 100, color: '#10b981', icon: 'favorite' },
+          { subject: 'Personal', A: calculateRadarScore('Personal'), fullMark: 100, color: '#06b6d4', icon: 'person' },
+          { subject: 'Hobbies', A: calculateRadarScore('Hobbies'), fullMark: 100, color: '#d946ef', icon: 'palette' },
+          { subject: 'Habits', A: calculateRadarScore('Habits'), fullMark: 100, color: '#f43f5e', icon: 'task_alt' },
         ];
 
         const overallBalance = Math.round(radarData.reduce((acc, curr) => acc + curr.A, 0) / radarData.length);
@@ -640,9 +645,20 @@ const ProgressScreen: React.FC<ProgressScreenProps> = ({
                 <h2 className="text-2xl font-black tracking-tight text-white">Life Balance</h2>
                 <p className="text-slate-400 font-bold text-xs mt-1">Track your real life stats.</p>
               </div>
-              <span className="text-[10px] font-black px-3 py-1.5 rounded-full border bg-blue-500/10 text-blue-400 border-blue-500/20">
-                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </span>
+              <div className="flex flex-col items-end space-y-2">
+                <span className="text-[10px] font-black px-3 py-1.5 rounded-full border bg-blue-500/10 text-blue-400 border-blue-500/20">
+                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+                {onResetLifeBalance && (
+                  <button
+                    onClick={() => setShowResetConfirm(true)}
+                    className="text-[10px] flex items-center gap-1 font-black px-3 py-1.5 rounded-full border bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[10px]">refresh</span>
+                    RESET
+                  </button>
+                )}
+              </div>
             </div>
             
             <div className="rounded-[32px] p-6 bg-[#0a0f16] border border-white/10 relative overflow-hidden">
@@ -874,11 +890,40 @@ const ProgressScreen: React.FC<ProgressScreenProps> = ({
         </div>
       </div>
 
-
-
-
-
-
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+           {/* Backdrop */}
+           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowResetConfirm(false)} />
+           
+           {/* Modal Dialog */}
+           <div className="relative z-10 w-full max-w-sm bg-[#1e2a36] border border-white/10 rounded-3xl p-6 shadow-2xl animate-zoom-in">
+               <div className="size-16 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center mx-auto mb-4 border border-red-500/30">
+                   <span className="material-symbols-outlined text-3xl">warning</span>
+               </div>
+               
+               <h2 className="text-xl font-black text-white text-center mb-2 tracking-tight">Reset Life Balance?</h2>
+               <p className="text-slate-400 text-sm text-center mb-6 font-bold">Are you sure you want to reset your life balance stats? This action cannot be undone.</p>
+               
+               <div className="grid grid-cols-2 gap-3">
+                   <button
+                       onClick={() => setShowResetConfirm(false)}
+                       className="py-3 rounded-2xl font-black text-xs uppercase tracking-wider bg-white/5 text-slate-300 hover:bg-white/10 transition-colors"
+                   >
+                       Cancel
+                   </button>
+                   <button
+                       onClick={() => {
+                           if (onResetLifeBalance) onResetLifeBalance();
+                           setShowResetConfirm(false);
+                       }}
+                       className="py-3 rounded-2xl font-black text-xs uppercase tracking-wider bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30 hover:text-red-400 transition-colors"
+                   >
+                       Reset
+                   </button>
+               </div>
+           </div>
+        </div>
+      )}
 
     </div>
   );

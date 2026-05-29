@@ -128,6 +128,7 @@ export interface UserProfile {
   xp: number;
   level: number;
   timetableImageUrl?: string;
+  profilePicture?: string;
 }
 
 export interface CampusChecklistItem {
@@ -155,3 +156,5 @@ export interface ResourceLink {
   subject: string;
   createdAt: string;
 }
+
+export type LifeBalanceStats = Record<string, number>;
